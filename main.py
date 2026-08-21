@@ -49,8 +49,7 @@ class RequestHandler(BaseHTTPRequestHandler):
         else:
             self.send_error(404)
 
-    def send_html(self):
-
+    def send_html0(self):
         html = """
         <!DOCTYPE html>
         <html>
@@ -70,6 +69,66 @@ class RequestHandler(BaseHTTPRequestHandler):
         </body>
         </html>
         """
+        data = html.encode("utf-8")
+
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+
+        self.wfile.write(data)
+        
+
+    def send_html(self):
+
+        html = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+
+            <meta name="viewport"
+                content="width=device-width, initial-scale=1.0">
+
+            <title>Desktop Streamer</title>
+
+            <style>
+
+                html, body {
+                    margin: 0;
+                    padding: 0;
+                    width: 100%;
+                    height: 100%;
+                }
+
+                body {
+                    background: #000;
+                    overflow: hidden;
+                }
+
+                .video {
+                    width: 100vw;
+                    height: 100vh;
+
+                    object-fit: contain;
+
+                    display: block;
+                }
+
+            </style>
+
+        </head>
+
+    <body>
+
+        <img
+            class="video"
+            src="/video"
+        >
+
+    </body>
+    </html>
+    """
 
         data = html.encode("utf-8")
 
