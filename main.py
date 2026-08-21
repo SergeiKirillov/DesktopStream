@@ -11,7 +11,7 @@ PORT = 8080
 FPS = 10
 JPEG_QUALITY = 70
 
-class ScreenStream:
+class ScreenStream0:
     def __init__(self):
         self.sct = mss.mss()
         self.monitor = self.sct.monitors[1]
@@ -34,7 +34,53 @@ class ScreenStream:
         )
         return buffer.getvalue()
 
-streamer = ScreenStream()
+streamer = ScreenStream0()
+
+class ScreenStream:
+    def __init__(self):
+        self.sct = mss.mss()
+        self.monitor = self.sct.monitors[1]
+
+        self.previous_screen = None
+
+    def get_frame_if_changed(self):
+
+        screenshot = self.sct.grab(self.monitor)
+
+        # Получаем данные текущего изображения
+        current_screen = screenshot.rgb
+
+        # Первое изображение всегда отправляем
+        if self.previous_screen is None:
+            self.previous_screen = current_screen
+            return self.make_jpeg(screenshot)
+
+        # Проверяем, изменился ли экран
+        if current_screen == self.previous_screen:
+            return None
+
+        # Экран изменился
+        self.previous_screen = current_screen
+
+        return self.make_jpeg(screenshot)
+
+    def make_jpeg(self, screenshot):
+
+        image = Image.frombytes(
+            "RGB",
+            screenshot.size,
+            screenshot.rgb
+        )
+
+        buffer = io.BytesIO()
+
+        image.save(
+            buffer,
+            format="JPEG",
+            quality=JPEG_QUALITY
+        )
+
+        return buffer.getvalue()
 
 class RequestHandler(BaseHTTPRequestHandler):
 
@@ -139,7 +185,7 @@ class RequestHandler(BaseHTTPRequestHandler):
 
         self.wfile.write(data)
 
-    def send_video(self):
+    def send_video0(self):
 
         self.send_response(200)
 
@@ -180,6 +226,51 @@ class RequestHandler(BaseHTTPRequestHandler):
 
         except (BrokenPipeError, ConnectionResetError):
             pass
+
+def send_video(self):
+
+    self.send_response(200)
+
+    self.send_header(
+        "Content-Type",
+        "multipart/x-mixed-replace; boundary=frame"
+    )
+
+    self.send_header("Cache-Control", "no-cache")
+    self.send_header("Pragma", "no-cache")
+
+    self.end_headers()
+
+    delay = 1 / 20
+
+    try:
+
+        while True:
+
+            frame = streamer.get_frame_if_changed()
+
+            if frame is not None:
+
+                self.wfile.write(b"--frame\r\n")
+
+                self.wfile.write(
+                    b"Content-Type: image/jpeg\r\n"
+                )
+
+                self.wfile.write(
+                    f"Content-Length: {len(frame)}\r\n\r\n".encode()
+                )
+
+                self.wfile.write(frame)
+                self.wfile.write(b"\r\n")
+
+                self.wfile.flush()
+
+            time.sleep(delay)
+
+    except (BrokenPipeError, ConnectionResetError):
+        pass
+
 
 
 def main():
