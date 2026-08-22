@@ -4,8 +4,6 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import mss
 from PIL import Image
-from version import VersionBuilder
-
 
 HOST = "0.0.0.0"
 PORT = 8080
@@ -13,9 +11,31 @@ PORT = 8080
 FPS = 10
 JPEG_QUALITY = 70
 
-VERSION = "20260822-0845"
+class ScreenStream0:
+    def __init__(self):
+        self.sct = mss.mss()
+        self.monitor = self.sct.monitors[1]
 
-# ---------------------- python -m PyInstaller --clean --noconfirm --onefile --version-file=version.txt  main.py------------------------
+    def get_frame(self):
+        screenshot=self.sct.grab(self.monitor)
+
+        image = Image.frombytes(
+            "RGB",
+            screenshot.size,
+            screenshot.rgb
+        )
+
+        buffer = io.BytesIO()
+
+        image.save(
+            buffer,
+            format="JPEG",
+            quality=JPEG_QUALITY
+        )
+        return buffer.getvalue()
+
+streamer = ScreenStream0()
+
 class ScreenStream:
     def __init__(self):
         self.sct = mss.mss()
@@ -64,8 +84,6 @@ class ScreenStream:
         )
 
         return buffer.getvalue()
-    
-streamer = ScreenStream()
 
 class RequestHandler(BaseHTTPRequestHandler):
 
@@ -170,7 +188,7 @@ class RequestHandler(BaseHTTPRequestHandler):
 
         self.wfile.write(data)
 
-    def send_video0(self):
+    def send_video(self):
 
         self.send_response(200)
 
@@ -212,7 +230,7 @@ class RequestHandler(BaseHTTPRequestHandler):
         except (BrokenPipeError, ConnectionResetError):
             pass
 
-    def send_video(self):
+    def send_video_1(self):
 
         self.send_response(200)
 
@@ -233,6 +251,8 @@ class RequestHandler(BaseHTTPRequestHandler):
             while True:
 
                 frame = streamer.get_frame_if_changed()
+                
+                
 
                 if frame is not None:
 
@@ -286,6 +306,4 @@ def main():
 
 
 if __name__ == "__main__":
-    builder = VersionBuilder()
-    version=builder.generate()
     main()
